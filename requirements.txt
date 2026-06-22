@@ -1,4 +1,6 @@
 streamlit
-tensorflow
 numpy
-pillow
+Pillow
+plotly
+tensorflow-cpu
+google-generativeai
