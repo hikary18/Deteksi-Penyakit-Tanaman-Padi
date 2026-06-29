@@ -77,25 +77,32 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# JEMBATAN INKOMPATIBILITAS KERAS (ANTI ERROR)
+# JEMBATAN INKOMPATIBILITAS KERAS (ANTI ERROR TOTAL)
 # ==========================================
 class SafeInputLayer(InputLayer):
     def __init__(self, *args, **kwargs):
         kwargs.pop('batch_shape', None)
         kwargs.pop('optional', None)
-        # Saring jika ada argumen dtype berbentuk dict/Keras 3 policy
         if 'dtype' in kwargs and isinstance(kwargs['dtype'], dict):
             kwargs.pop('dtype')
         super().__init__(*args, **kwargs)
 
 class SafeRescaling(Layer):
     def __init__(self, scale, offset=0.0, **kwargs):
-        kwargs.pop('dtype', None) # Buang konfigurasi DTypePolicy yang memicu error
+        kwargs.pop('dtype', None) 
         super().__init__(**kwargs)
         self.scale = scale
         self.offset = offset
     def call(self, inputs):
         return inputs * self.scale + self.offset
+
+class SafeNormalization(Layer):
+    def __init__(self, axis=-1, mean=None, variance=None, invert=False, **kwargs):
+        kwargs.pop('dtype', None) 
+        super().__init__(**kwargs)
+        self.axis = axis
+    def call(self, inputs):
+        return inputs
 
 # ==========================================
 # SAFE PATH & LOAD MODEL
@@ -105,12 +112,12 @@ MODEL_PATH = os.path.join(BASE_DIR, "rice_model.h5")
 
 @st.cache_resource
 def load_rice_model():
-    # Mendaftarkan 'InputLayer' dan 'Rescaling' kustom agar tidak memicu error DTypePolicy
     return load_model(
         MODEL_PATH, 
         custom_objects={
             'InputLayer': SafeInputLayer,
-            'Rescaling': SafeRescaling
+            'Rescaling': SafeRescaling,
+            'Normalization': SafeNormalization
         }
     )
 
@@ -120,7 +127,7 @@ try:
 except Exception as e:
     model_status = f"🔴 Offline ({str(e)})"
 
-# Deklarasi variabel utama agar terhindar dari NameError
+# Deklarasi target kelas analisis komparatif
 classes = ["BrownSpot", "LeafBlast", "LeafSmut", "Healthy"]
 
 # ==========================================
@@ -149,7 +156,7 @@ st.markdown("<h1 style='color: #0E2E14; font-weight: 700; margin-bottom: 5px;'>P
 st.markdown("<p style='color: #555555; font-size: 15px;'>Integrasi kecerdasan buatan berbasis visi komputer dan asisten pintar untuk ketahanan pangan nasional.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Menggunakan Tabs dengan ikon profesional (Lucide) dari Streamlit
+# Menggunakan Tabs dengan sistem ikon premium terintegrasi
 tab_deteksi, tab_chatbot = st.tabs(["scan Deteksi Penyakit", "bot RiceGuard Chat Assistant"])
 
 # ==========================================
