@@ -5,7 +5,7 @@ from PIL import Image
 import plotly.graph_objects as go
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from tensorflow.keras.layers import InputLayer
+from tensorflow.keras.layers import InputLayer, Layer
 import info_penyakit as di
 
 # ==========================================
@@ -77,7 +77,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# JEMBATAN INKOMPATIBILITAS KERAS (PERBAIKAN ERROR DTYPEPOLICY)
+# JEMBATAN INKOMPATIBILITAS KERAS (ANTI ERROR)
 # ==========================================
 class SafeInputLayer(InputLayer):
     def __init__(self, *args, **kwargs):
@@ -88,8 +88,6 @@ class SafeInputLayer(InputLayer):
             kwargs.pop('dtype')
         super().__init__(*args, **kwargs)
 
-# Mock class untuk mengelabui Keras lawas agar mengenali objek Rescaling Keras 3
-from tensorflow.keras.layers import Layer
 class SafeRescaling(Layer):
     def __init__(self, scale, offset=0.0, **kwargs):
         kwargs.pop('dtype', None) # Buang konfigurasi DTypePolicy yang memicu error
@@ -121,6 +119,10 @@ try:
     model_status = "🟢 Online"
 except Exception as e:
     model_status = f"🔴 Offline ({str(e)})"
+
+# Deklarasi variabel utama agar terhindar dari NameError
+classes = ["BrownSpot", "LeafBlast", "LeafSmut", "Healthy"]
+
 # ==========================================
 # SIDEBAR PROFESIONAL
 # ==========================================
@@ -147,7 +149,7 @@ st.markdown("<h1 style='color: #0E2E14; font-weight: 700; margin-bottom: 5px;'>P
 st.markdown("<p style='color: #555555; font-size: 15px;'>Integrasi kecerdasan buatan berbasis visi komputer dan asisten pintar untuk ketahanan pangan nasional.</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Menggunakan Tabs dengan ikon profesional (Lucide)
+# Menggunakan Tabs dengan ikon profesional (Lucide) dari Streamlit
 tab_deteksi, tab_chatbot = st.tabs(["scan Deteksi Penyakit", "bot RiceGuard Chat Assistant"])
 
 # ==========================================
@@ -262,8 +264,6 @@ with tab_chatbot:
         ]
         
     for message in st.session_state.messages:
-        # Menyesuaikan avatar dengan ikon sistem profesional bawaan Streamlit
-        avatar_type = "assistant" if message["role"] == "assistant" else "user"
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
             
@@ -275,7 +275,7 @@ with tab_chatbot:
         query_lower = user_query.lower()
         bot_response = ""
         
-        # Saringan Basis Data Lokal Utama (Akurasi Tinggi & Cepat)
+        # Saringan Basis Data Lokal Utama
         if any(x in query_lower for x in ["brown spot", "bercak cokelat", "bercak coklat"]):
             b_info = di.disease_info.get("BrownSpot", {})
             bot_response = f"**Analisis Teknis: Brown Spot (Bercak Cokelat Daun)**\n\n" \
