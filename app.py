@@ -77,13 +77,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# JEMBATAN INKOMPATIBILITAS KERAS
+# JEMBATAN INKOMPATIBILITAS KERAS (PERBAIKAN ERROR DTYPEPOLICY)
 # ==========================================
 class SafeInputLayer(InputLayer):
     def __init__(self, *args, **kwargs):
         kwargs.pop('batch_shape', None)
         kwargs.pop('optional', None)
+        # Saring jika ada argumen dtype berbentuk dict/Keras 3 policy
+        if 'dtype' in kwargs and isinstance(kwargs['dtype'], dict):
+            kwargs.pop('dtype')
         super().__init__(*args, **kwargs)
+
+# Mock class untuk mengelabui Keras lawas agar mengenali objek Rescaling Keras 3
+from tensorflow.keras.layers import Layer
+class SafeRescaling(Layer):
+    def __init__(self, scale, offset=0.0, **kwargs):
+        kwargs.pop('dtype', None) # Buang konfigurasi DTypePolicy yang memicu error
+        super().__init__(**kwargs)
+        self.scale = scale
+        self.offset = offset
+    def call(self, inputs):
+        return inputs * self.scale + self.offset
 
 # ==========================================
 # SAFE PATH & LOAD MODEL
@@ -93,16 +107,20 @@ MODEL_PATH = os.path.join(BASE_DIR, "rice_model.h5")
 
 @st.cache_resource
 def load_rice_model():
-    return load_model(MODEL_PATH, custom_objects={'InputLayer': SafeInputLayer})
+    # Mendaftarkan 'InputLayer' dan 'Rescaling' kustom agar tidak memicu error DTypePolicy
+    return load_model(
+        MODEL_PATH, 
+        custom_objects={
+            'InputLayer': SafeInputLayer,
+            'Rescaling': SafeRescaling
+        }
+    )
 
 try:
     model = load_rice_model()
     model_status = "🟢 Online"
 except Exception as e:
     model_status = f"🔴 Offline ({str(e)})"
-
-classes = ["BrownSpot", "LeafBlast", "LeafSmut", "Healthy"]
-
 # ==========================================
 # SIDEBAR PROFESIONAL
 # ==========================================
