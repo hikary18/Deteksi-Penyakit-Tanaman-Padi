@@ -65,7 +65,8 @@ st.markdown("""
 # SAFE PATH & LOAD MODEL
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models", "rice_model.h5")
+# Hapus kata "models" agar sistem langsung membaca file di folder utama
+MODEL_PATH = os.path.join(BASE_DIR, "rice_model.h5")
 
 @st.cache_resource
 def load_rice_model():
